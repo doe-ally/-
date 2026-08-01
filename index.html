@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="小迪的工作台">
+<meta name="theme-color" content="#2563eb">
+<title>小迪的工作台</title>
+<link rel="manifest" href="manifest.json">
+<style>
+:root{
+  --blue-50:#eff6ff;--blue-100:#dbeafe;--blue-200:#bfdbfe;--blue-300:#93c5fd;
+  --blue-400:#60a5fa;--blue-500:#3b82f6;--blue-600:#2563eb;--blue-700:#1d4ed8;
+  --blue-800:#1e40af;--blue-900:#1e3a8a;
+  --gray-50:#f9fafb;--gray-100:#f3f4f6;--gray-200:#e5e7eb;--gray-300:#d1d5db;
+  --gray-400:#9ca3af;--gray-500:#6b7280;--gray-600:#4b5563;--gray-700:#374151;
+  --gray-800:#1f2937;--gray-900:#111827;
+  --bg:#f5f7fa;--card:#fff;--text:#1f2937;--text-light:#6b7280;
+  --border:#e5e7eb;--sidebar-w:240px;--radius:12px;--shadow:0 1px 3px rgba(0,0,0,.08);
+  --shadow-md:0 4px 12px rgba(37,99,235,.08);
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font-family:inherit;font-size:14px;outline:none}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:var(--blue-200);border-radius:3px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* 布局 */
+.app{display:flex;height:100dvh;padding-top:var(--safe-top);padding-bottom:var(--safe-bottom)}
+.sidebar{width:var(--sidebar-w);background:linear-gradient(180deg,#fff,#f8fbff);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:width .25s ease,transform .25s ease;flex-shrink:0;z-index:100;overflow:hidden}
+.sidebar.collapsed{width:0;border-right:none}
+.sidebar-header{display:flex;align-items:center;gap:10px;padding:18px 18px;border-bottom:1px solid var(--border);white-space:nowrap}
+.sidebar-logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--blue-500),var(--blue-700));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px;flex-shrink:0}
+.sidebar-title{font-size:15px;font-weight:700;color:var(--blue-800)}
+.sidebar-sub{font-size:11px;color:var(--gray-400)}
+.nav{flex:1;overflow-y:auto;padding:10px}
+.nav-section{font-size:11px;color:var(--gray-400);font-weight:600;padding:12px 12px 6px;letter-spacing:.5px}
+.nav-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;color:var(--gray-700);font-size:14px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap;user-select:none}
+.nav-item:hover{background:var(--blue-50);color:var(--blue-700)}
+.nav-item.active{background:var(--blue-600);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.3)}
+.nav-icon{width:20px;height:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.nav-item.active .nav-icon svg{stroke:#fff}
+.sidebar-footer{padding:12px 14px;border-top:1px solid var(--border)}
+.sidebar-toggle{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px;border-radius:8px;background:var(--gray-100);color:var(--gray-600);font-size:13px;font-weight:500}
+.sidebar-toggle:hover{background:var(--blue-50);color:var(--blue-600)}
+
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--card);border-bottom:1px solid var(--border);box-shadow:var(--shadow);flex-shrink:0}
+.topbar-menu-btn{display:none;width:38px;height:38px;border-radius:9px;background:var(--blue-50);color:var(--blue-600);align-items:center;justify-content:center}
+.topbar-title{font-size:17px;font-weight:700;color:var(--gray-800);flex:1;min-width:0}
+.topbar-title .emoji{margin-right:6px}
+.topbar-actions{display:flex;gap:8px}
+.topbar-btn{padding:7px 12px;border-radius:8px;background:var(--blue-50);color:var(--blue-600);font-size:13px;font-weight:500;display:flex;align-items:center;gap:5px}
+.topbar-btn:hover{background:var(--blue-100)}
+.content{flex:1;overflow-y:auto;padding:18px;-webkit-overflow-scrolling:touch}
+.module{display:none;animation:fadein .25s ease}
+.module.active{display:block}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* 卡片与通用 */
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px}
+.card-title{font-size:15px;font-weight:700;color:var(--gray-800);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card-title .emoji{font-size:18px}
+.grid{display:grid;gap:14px}
+.grid-2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.grid-3{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.grid-4{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.stat-card{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--blue-500)}
+.stat-card.green::before{background:#10b981}.stat-card.orange::before{background:#f59e0b}
+.stat-card.purple::before{background:#8b5cf6}.stat-card.red::before{background:#ef4444}
+.stat-label{font-size:12px;color:var(--gray-500);margin-bottom:6px}
+.stat-value{font-size:24px;font-weight:800;color:var(--gray-800)}
+.stat-sub{font-size:11px;color:var(--gray-400);margin-top:4px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border-radius:8px;background:var(--blue-600);color:#fff;font-size:13px;font-weight:600;transition:all .15s;white-space:nowrap}
+.btn:hover{background:var(--blue-700)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-outline{background:var(--blue-50);color:var(--blue-600)}
+.btn-outline:hover{background:var(--blue-100)}
+.btn-danger{background:#fee2e2;color:#dc2626}
+.btn-danger:hover{background:#fecaca}
+.btn-success{background:#dcfce7;color:#16a34a}
+.btn-success:hover{background:#bbf7d0}
+.input,.select,.textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;background:#fff;color:var(--text);transition:border .15s}
+.input:focus,.select:focus,.textarea:focus{border-color:var(--blue-500)}
+.textarea{resize:vertical;min-height:80px}
+.label{font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:5px;display:block}
+.form-row{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.form-row>*{flex:1;min-width:120px}
+.tag{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;background:var(--blue-50);color:var(--blue-700)}
+.tag.green{background:#dcfce7;color:#16a34a}.tag.orange{background:#fef3c7;color:#d97706}
+.tag.red{background:#fee2e2;color:#dc2626}.tag.purple{background:#f3e8ff;color:#9333ea}
+.tag.gray{background:var(--gray-100);color:var(--gray-600)}
+.empty{text-align:center;padding:30px 16px;color:var(--gray-400);font-size:13px}
+.empty .emoji{font-size:32px;display:block;margin-bottom:8px}
+.list-item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--gray-100)}
+.list-item:last-child{border-bottom:none}
+.checkbox{width:20px;height:20px;border:2px solid var(--gray-300);border-radius:6px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.checkbox.checked{background:var(--blue-600);border-color:var(--blue-600)}
+.checkbox.checked svg{display:block}
+.checkbox svg{display:none;width:12px;height:12px;stroke:#fff;stroke-width:3}
+.modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-mask.show{display:flex}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;animation:fadein .2s}
+.modal-header{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1}
+.modal-title{font-size:16px;font-weight:700}
+.modal-close{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--gray-500);font-size:20px}
+.modal-close:hover{background:var(--gray-100)}
+.modal-body{padding:18px}
+.modal-footer{padding:14px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:#fff}
+.fab{position:fixed;right:18px;bottom:calc(20px + var(--safe-bottom));width:54px;height:54px;border-radius:50%;background:var(--blue-600);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(37,99,235,.4);z-index:90;transition:transform .15s}
+.fab:hover{transform:scale(1.08)}
+.section-tabs{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+.section-tab{padding:7px 14px;border-radius:20px;background:var(--card);color:var(--gray-600);font-size:13px;font-weight:500;white-space:nowrap;box-shadow:var(--shadow)}
+.section-tab.active{background:var(--blue-600);color:#fff}
+.progress-bar{height:6px;background:var(--gray-100);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--blue-500),var(--blue-600));border-radius:3px;transition:width .3s}
+.toast{position:fixed;bottom:calc(80px + var(--safe-bottom));left:50%;transform:translateX(-50%);background:var(--gray-800);color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;z-index:300;opacity:0;transition:opacity .25s,bottom .25s;pointer-events:none}
+.toast.show{opacity:1;bottom:calc(90px + var(--safe-bottom))}
+.icon-btn{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--gray-500)}
+.icon-btn:hover{background:var(--gray-100);color:var(--gray-700)}
+.icon-btn.danger:hover{background:#fee2e2;color:#dc2626}
+kbd{background:var(--gray-100);border:1px solid var(--gray-200);border-radius:4px;padding:1px 5px;font-size:11px;font-family:inherit}
+
+/* 响应式 */
+@media(max-width:768px){
+  .sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);width:var(--sidebar-w);box-shadow:2px 0 20px rgba(0,0,0,.15)}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar.collapsed{transform:translateX(-100%)}
+  .topbar-menu-btn{display:flex}
+  .content{padding:14px}
+  .stat-value{font-size:20px}
+}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:99;display:none}
+.overlay.show{display:block}
+@media(min-width:769px){.overlay{display:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- 侧边栏 -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">迪</div>
+      <div>
+        <div class="sidebar-title">小迪的工作台</div>
+        <div class="sidebar-sub">个人生活管理</div>
+      </div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="sidebar-footer">
+      <button class="sidebar-toggle" onclick="toggleSidebar()">
+        <span id="sidebarToggleText">收起侧栏</span>
+      </button>
+    </div>
+  </aside>
+  <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+  <!-- 主区域 -->
+  <div class="main">
+    <div class="topbar">
+      <button class="topbar-menu-btn" onclick="openSidebar()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="topbar-title" id="topbarTitle"></div>
+      <div class="topbar-actions">
+        <button class="topbar-btn" onclick="openSettings()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          设置
+        </button>
+      </div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fab" onclick="onFabClick()" style="display:none">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
+
+<!-- 通用弹窗 -->
+<div class="modal-mask" id="modalMask">
+  <div class="modal" id="modal"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ==================== 数据层 ==================== */
+const STORE_KEY='xd_workbench_v1';
+const CATEGORIES=[
+  {key:'food',name:'餐饮',icon:'🍔',color:'#f59e0b'},
+  {key:'transport',name:'交通',icon:'🚇',color:'#3b82f6'},
+  {key:'shopping',name:'购物',icon:'🛍️',color:'#8b5cf6'},
+  {key:'housing',name:'住房',icon:'🏠',color:'#10b981'},
+  {key:'entertainment',name:'娱乐',icon:'🎮',color:'#ec4899'},
+  {key:'medical',name:'医疗',icon:'💊',color:'#ef4444'},
+  {key:'education',name:'教育',icon:'📚',color:'#6366f1'},
+  {key:'other',name:'其他',icon:'📦',color:'#6b7280'}
+];
+const MODULES=[
+  {id:'overview',name:'今日概览',icon:'dashboard',section:'生活',defaultOn:true,hasFab:false},
+  {id:'tasks',name:'每日任务看板',icon:'tasks',section:'生活',defaultOn:true,hasFab:true},
+  {id:'accounting',name:'记账模块',icon:'accounting',section:'生活',defaultOn:true,hasFab:true},
+  {id:'countdown',name:'重要日期倒计时',icon:'countdown',section:'生活',defaultOn:true,hasFab:true},
+  {id:'fitness',name:'健身打卡',icon:'fitness',section:'生活',defaultOn:true,hasFab:true},
+  {id:'inspiration',name:'选题灵感中心',icon:'idea',section:'创作',defaultOn:true,hasFab:true},
+  {id:'scripts',name:'脚本创作库',icon:'script',section:'创作',defaultOn:true,hasFab:false},
+  {id:'review',name:'数据复盘板块',icon:'review',section:'创作',defaultOn:true,hasFab:true},
+  {id:'radar',name:'热点雷达',icon:'radar',section:'创作',defaultOn:true,hasFab:true}
+];
+const ICONS={
+  dashboard:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
+  tasks:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+  accounting:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+  countdown:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><polyline points="12 9 12 13 14 15"/><line x1="5" y1="3" x2="2" y2="6"/><line x1="22" y1="6" x2="19" y2="3"/></svg>',
+  fitness:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5h11M6.5 17.5h11M4 9.5v5M20 9.5v5M6.5 9.5v5M17.5 9.5v5"/><path d="M9 12h6"/></svg>',
+  idea:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/></svg>',
+  script:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>',
+  review:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
+  radar:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><line x1="12" y1="12" x2="20" y2="4"/></svg>',
+  settings:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'
+};
+let DB=null;
+let currentModule='overview';
+
+function defaultDB(){
+  const today=todayStr();
+  return{
+    settings:{moduleNames:{},moduleOn:{},theme:'blue'},
+    tasks:{items:[],archive:{}},
+    accounting:{items:[]},
+    countdown:{items:[]},
+    fitness:{records:{},types:['跑步','力量训练','瑜伽','跳绳','骑行','游泳']},
+    inspiration:{notes:[],breakdowns:[],topics:[]},
+    scripts:{items:[],generators:{}},
+    review:{items:[]},
+    radar:{items:[]}
+  };
+}
+function loadDB(){
+  try{const raw=localStorage.getItem(STORE_KEY);DB=raw?JSON.parse(raw):defaultDB();}
+  catch(e){DB=defaultDB();}
+  if(!DB.settings)DB.settings=defaultDB().settings;
+  if(!DB.settings.moduleNames)DB.settings.moduleNames={};
+  if(!DB.settings.moduleOn)DB.settings.moduleOn={};
+  MODULES.forEach(m=>{if(DB.settings.moduleOn[m.id]===undefined)DB.settings.moduleOn[m.id]=m.defaultOn;
+    if(!DB.settings.moduleNames[m.id])DB.settings.moduleNames[m.id]=m.name;});
+  // 确保子结构
+  if(!DB.tasks.archive)DB.tasks.archive={};
+  if(!DB.fitness.types)DB.fitness.types=['跑步','力量训练','瑜伽','跳绳','骑行','游泳'];
+  if(!DB.fitness.records)DB.fitness.records={};
+  if(!DB.inspiration.breakdowns)DB.inspiration.breakdowns=[];
+  if(!DB.inspiration.topics)DB.inspiration.topics=[];
+  if(!DB.scripts.generators)DB.scripts.generators={};
+}
+function saveDB(){localStorage.setItem(STORE_KEY,JSON.stringify(DB));}
+function todayStr(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function monthStr(){return todayStr().slice(0,7);}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+
+/* ==================== UI 基础 ==================== */
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2000);}
+function showModal(html){const m=document.getElementById('modal');m.innerHTML=html;document.getElementById('modalMask').classList.add('show');}
+function closeModal(){document.getElementById('modalMask').classList.remove('show');}
+function getModuleName(id){return DB.settings.moduleNames[id]||MODULES.find(m=>m.id===id).name;}
+function isModuleOn(id){return DB.settings.moduleOn[id]!==false;}
+function fmtMoney(n){return '¥'+Number(n||0).toFixed(2);}
+function daysBetween(dateStr){const target=new Date(dateStr+'T00:00:00');const now=new Date();now.setHours(0,0,0,0);return Math.ceil((target-now)/86400000);}
+
+function buildNav(){
+  const nav=document.getElementById('nav');
+  let html='';
+  let lastSection='';
+  MODULES.forEach(m=>{
+    if(!isModuleOn(m.id))return;
+    if(m.section!==lastSection){html+=`<div class="nav-section">${m.section}</div>`;lastSection=m.section;}
+    const name=getModuleName(m.id);
+    html+=`<div class="nav-item${currentModule===m.id?' active':''}" data-id="${m.id}" onclick="switchModule('${m.id}')">
+      <span class="nav-icon">${ICONS[m.icon]||''}</span><span>${name}</span></div>`;
+  });
+  nav.innerHTML=html;
+}
+function switchModule(id){
+  if(!isModuleOn(id))return;
+  currentModule=id;
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.id===id));
+  const m=MODULES.find(x=>x.id===id);
+  document.getElementById('topbarTitle').innerHTML='<span class="emoji">'+sectionEmoji(m.icon)+'</span>'+getModuleName(id);
+  renderModule(id);
+  document.getElementById('fab').style.display=m.hasFab?'flex':'none';
+  if(window.innerWidth<=768)closeSidebar();
+}
+function sectionEmoji(icon){const map={dashboard:'📊',tasks:'✅',accounting:'💰',countdown:'⏰',fitness:'💪',idea:'💡',script:'📝',review:'📈',radar:'📡'};return map[icon]||'📁';}
+function renderModule(id){
+  const c=document.getElementById('content');
+  const f={overview:renderOverview,tasks:renderTasks,accounting:renderAccounting,countdown:renderCountdown,fitness:renderFitness,inspiration:renderInspiration,scripts:renderScripts,review:renderReview,radar:renderRadar};
+  c.innerHTML=(f[id]||renderOverview)();
+  // 绑定勾选
+  c.querySelectorAll('.checkbox').forEach(cb=>{
+    cb.onclick=()=>{const fn=cb.getAttribute('data-fn');if(fn&&window[fn])window[fn](cb.getAttribute('data-id'));};
+  });
+}
+
+/* 侧边栏 */
+function toggleSidebar(){
+  const sb=document.getElementById('sidebar');
+  if(window.innerWidth<=768){sb.classList.toggle('open');document.getElementById('overlay').classList.toggle('show',sb.classList.contains('open'));}
+  else{sb.classList.toggle('collapsed');document.getElementById('sidebarToggleText').textContent=sb.classList.contains('collapsed')?'展开侧栏':'收起侧栏';}
+}
+function openSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('overlay').classList.add('show');}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('show');}
+
+/* 设置 */
+function openSettings(){
+  let html=`<div class="modal-header"><div class="modal-title">⚙️ 设置</div><button class="modal-close" onclick="closeModal()">×</button></div><div class="modal-body">`;
+  html+=`<div class="card-title">模块开关与命名</div>`;
+  MODULES.forEach(m=>{
+    const on=isModuleOn(m.id);
+    const name=getModuleName(m.id);
+    html+=`<div class="list-item">
+      <span style="font-size:18px">${sectionEmoji(m.icon)}</span>
+      <div style="flex:1"><input class="input" value="${name}" onchange="renameModule('${m.id}',this.value)"></div>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:${on?'#2563eb':'#9ca3af'}">
+        <input type="checkbox" ${on?'checked':''} onchange="toggleModule('${m.id}',this.checked)" style="width:18px;height:18px"> ${on?'开启':'关闭'}
+      </label>
+    </div>`;
+  });
+  html+=`</div><div class="modal-body" style="padding-top:0">
+    <div class="card-title">数据管理</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-outline" onclick="exportData()">导出数据</button>
+      <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">导入数据</button>
+      <button class="btn btn-danger" onclick="clearAllData()">清空所有数据</button>
+    </div>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+    <div style="margin-top:14px;padding:12px;background:#eff6ff;border-radius:8px;font-size:12px;color:#1e40af;line-height:1.8">
+      📱 <b>添加到主屏幕</b>：用 Safari/Chrome 打开网页，点分享按钮 → 添加到主屏幕，即可像 App 一样使用。<br>
+      💾 <b>数据本地存储</b>：所有数据仅保存在本设备浏览器中，不上传任何服务器。清除浏览器数据会丢失，请定期导出备份。
+    </div>
+  </div>`;
+  showModal(html);
+}
+function renameModule(id,name){DB.settings.moduleNames[id]=name.trim()||MODULES.find(m=>m.id===id).name;saveDB();buildNav();if(currentModule===id)switchModule(id);}
+function toggleModule(id,on){DB.settings.moduleOn[id]=on;saveDB();buildNav();if(!on&&currentModule===id){const first=MODULES.find(m=>isModuleOn(m.id));if(first)switchModule(first.id);}}
+function exportData(){
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='小迪工作台_'+todayStr()+'.json';a.click();
+  toast('数据已导出');
+}
+function importData(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{try{DB=JSON.parse(ev.target.result);saveDB();buildNav();switchModule(currentModule);closeModal();toast('导入成功');}catch(err){toast('导入失败：文件格式错误');}};
+  reader.readAsText(file);
+}
+function clearAllData(){
+  showModal(`<div class="modal-header"><div class="modal-title">⚠️ 确认清空</div></div>
+  <div class="modal-body"><p style="color:#dc2626;font-weight:600">这将删除所有数据且无法恢复！建议先导出备份。</p>
+  <p style="margin-top:8px;color:#6b7280">输入 <b>确认清空</b> 以继续：</p>
+  <input class="input" id="confirmText" style="margin-top:8px" placeholder="确认清空"></div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="openSettings()">取消</button>
+  <button class="btn btn-danger" onclick="doClear()">确认清空</button></div>`);
+}
+function doClear(){
+  if(document.getElementById('confirmText').value!=='确认清空'){toast('请输入正确的确认文字');return;}
+  localStorage.removeItem(STORE_KEY);DB=null;loadDB();saveDB();buildNav();switchModule('overview');closeModal();toast('已清空所有数据');
+}
+function onFabClick(){const f={tasks:fabTask,accounting:fabAccounting,countdown:fabCountdown,fitness:fabFitness,inspiration:fabInspiration,review:fabReview,radar:fabRadar};if(f[currentModule])f[currentModule]();}
+
+/* ==================== 模块1: 今日概览 ==================== */
+function renderOverview(){
+  const today=todayStr();
+  // 任务
+  const todayTasks=(DB.tasks.items||[]).filter(t=>t.date===today||(!t.date&&t.repeat==='daily'));
+  const taskDone=todayTasks.filter(t=>t.done).length;
+  // 记账
+  const monthItems=DB.accounting.items.filter(i=>i.date.startsWith(monthStr()));
+  const monthSpend=monthItems.filter(i=>i.type==='expense').reduce((s,i)=>s+i.amount,0);
+  const todaySpend=DB.accounting.items.filter(i=>i.date===today&&i.type==='expense').reduce((s,i)=>s+i.amount,0);
+  // 健身
+  const fitToday=DB.fitness.records[today];
+  // 倒计时
+  const upcoming=DB.countdown.items.filter(i=>!i.done).map(i=>({...i,days:daysBetween(i.date)})).sort((a,b)=>a.days-b.days).slice(0,3);
+  // 创作
+  const inspCount=DB.inspiration.topics.length;
+  const scriptCount=DB.scripts.items.length;
+  const now=new Date();
+  const greeting=now.getHours()<6?'凌晨好':now.getHours()<11?'早上好':now.getHours()<14?'中午好':now.getHours()<18?'下午好':now.getHours()<22?'晚上好':'夜深了';
+  const weekDay=['日','一','二','三','四','五','六'][now.getDay()];
+
+  let html=`<div class="card" style="background:linear-gradient(135deg,#2563eb,#1e40af);color:#fff;border:none">
+    <div style="font-size:13px;opacity:.9">${greeting}，小迪 👋</div>
+    <div style="font-size:22px;font-weight:800;margin-top:4px">${now.getMonth()+1}月${now.getDate()}日 星期${weekDay}</div>
+    <div style="font-size:12px;opacity:.8;margin-top:6px">${todayTasks.length-taskDone} 个待办 · 今日已花 ${fmtMoney(todaySpend)} ${fitToday?'· 已健身 💪':''}</div>
+  </div>`;
+  html+=`<div class="grid grid-4">`;
+  html+=statCard('今日待办',`${taskDone}/${todayTasks.length}`,'剩余 '+(todayTasks.length-taskDone),'orange');
+  html+=statCard('今日支出',fmtMoney(todaySpend),'本月 '+fmtMoney(monthSpend),'red');
+  html+=statCard('健身打卡',fitToday?'✅ 已打卡':'⏳ 未打卡',fitToday?fitToday.type:'今天动一动','green');
+  html+=statCard('创作库存','选题'+inspCount+' · 脚本'+scriptCount,'继续加油','purple');
+  html+=`</div>`;
+  // 待办
+  html+=`<div class="card"><div class="card-title"><span class="emoji">✅</span>今日待办`;
+  if(todayTasks.length)html+=` <button class="btn btn-sm btn-outline" style="margin-left:auto" onclick="switchModule('tasks')">全部</button>`;
+  html+=`</div>`;
+  if(!todayTasks.length)html+=`<div class="empty"><span class="emoji">🎉</span>今天没有待办，享受生活吧</div>`;
+  else html+=todayTasks.slice(0,5).map(t=>`<div class="list-item">
+    <div class="checkbox${t.done?' checked':''}" data-fn="toggleTask" data-id="${t.id}"><svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg></div>
+    <span style="flex:1;${t.done?'text-decoration:line-through;color:#9ca3af':''}">${esc(t.text)}</span>
+    ${t.priority?`<span class="tag ${t.priority==='high'?'red':t.priority==='mid'?'orange':'gray'}">${t.priority==='high'?'高':'中'}</span>`:''}
+  </div>`).join('');
+  html+=`</div>`;
+  // 倒计时
+  if(upcoming.length){
+    html+=`<div class="card"><div class="card-title"><span class="emoji">⏰</span>即将到来</div>`;
+    html+=upcoming.map(c=>{
+      const d=c.days;const cls=d<0?'red':d<=3?'orange':'green';
+      return`<div class="list-item">
+        <span style="font-size:20px">${c.emoji||'📅'}</span>
+        <div style="flex:1"><div style="font-weight:600">${esc(c.name)}</div><div style="font-size:12px;color:#9ca3af">${c.date}</div></div>
+        <div style="text-align:right"><div style="font-size:18px;font-weight:800;color:${cls==='red'?'#ef4444':cls==='orange'?'#f59e0b':'#10b981'}">${d<0?'已过 '+(-d)+'天':'还有 '+d+'天'}</div></div>
+      </div>`;
+    }).join('');
+    html+=`</div>`;
+  }
+  // 近期记账
+  const recentAcc=DB.accounting.items.filter(i=>i.date===today).slice(-4);
+  if(recentAcc.length){
+    html+=`<div class="card"><div class="card-title"><span class="emoji">💰</span>今日记账</div>`;
+    html+=recentAcc.map(i=>{const cat=CATEGORIES.find(c=>c.key===i.category);return`<div class="list-item">
+      <span style="font-size:18px">${cat?cat.icon:'📦'}</span>
+      <div style="flex:1"><div>${esc(i.note||cat.name)}</div><div style="font-size:12px;color:#9ca3af">${cat?cat.name:''}</div></div>
+      <span style="font-weight:700;color:${i.type==='expense'?'#ef4444':'#10b981'}">${i.type==='expense'?'-':'+'}${fmtMoney(i.amount)}</span>
+    </div>`;}).join('');
+    html+=`</div>`;
+  }
+  return html;
+}
+function statCard(label,value,sub,color){return`<div class="stat-card ${color||''}"><div class="stat-label">${label}</div><div class="stat-value">${value}</div><div class="stat-sub">${sub||''}</div></div>`;}
+
+/* ==================== 模块2: 每日任务看板 ==================== */
+function renderTasks(){
+  const today=todayStr();
+  const all=DB.tasks.items||[];
+  const todayTasks=all.filter(t=>t.date===today||(!t.date&&t.repeat==='daily'));
+  const done=todayTasks.filter(t=>t.done).length;
+  const pct=todayTasks.length?Math.round(done/todayTasks.length*100):0;
+  let html=`<div class="card"><div class="card-title"><span class="emoji">📊</span>今日进度</div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="font-size:28px;font-weight:800;color:#2563eb">${pct}%</div>
+      <div style="flex:1"><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <div style="font-size:12px;color:#9ca3af;margin-top:4px">${done}/${todayTasks.length} 已完成</div></div>
+    </div></div>`;
+  html+=`<div class="card"><div class="card-title"><span class="emoji">✅</span>今日待办</div>`;
+  if(!todayTasks.length)html+=`<div class="empty"><span class="emoji">📋</span>暂无待办，点右下角 + 添加</div>`;
+  else{
+    const sorted=todayTasks.sort((a,b)=>(a.done?1:0)-(b.done?1:0)||(a.priority==='high'?-1:1));
+    html+=sorted.map(t=>`<div class="list-item">
+      <div class="checkbox${t.done?' checked':''}" data-fn="toggleTask" data-id="${t.id}"><svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div style="flex:1;${t.done?'opacity:.5':''}"><div style="${t.done?'text-decoration:line-through;color:#9ca3af':''}">${esc(t.text)}</div>
+      ${t.tag?`<span class="tag gray" style="margin-top:2px">${esc(t.tag)}</span>`:''}</div>
+      ${t.priority?`<span class="tag ${t.priority==='high'?'red':'orange'}">${t.priority==='high'?'高':'中'}</span>`:''}
+      <button class="icon-btn danger" onclick="deleteTask('${t.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+    </div>`).join('');
+  }
+  html+=`</div>`;
+  return html;
+}
+function fabTask(){
+  showModal(`<div class="modal-header"><div class="modal-title">添加待办</div><button class="modal-close" onclick="closeModal()">×</button></div>
+  <div class="modal-body">
+    <div class="form-row"><div><label class="label">任务内容</label><input class="input" id="taskText" placeholder="如：写完视频脚本" autofocus></div></div>
+    <div class="form-row">
+      <div><label class="label">优先级</label><select class="select" id="taskPriority"><option value="">无</option><option value="high">高</option><option value="mid">中</option></select></div>
+      <div><label class="label">标签</label><input class="input" id="taskTag" placeholder="如：创作"></div>
+    </div>
+    <div class="form-row"><div><label class="label">日期</label><input type="date" class="input" id="taskDate" value="${todayStr()}"></div>
+    <div><label class="label">重复</label><select class="select" id="taskRepeat"><option value="">不重复</option><option value="daily">每日</option></select></div></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn" onclick="addTask()">添加</button></div>`);
+}
+function addTask(){
+  const text=document.getElementById('taskText').value.trim();if(!text){toast('请输入任务内容');return;}
+  DB.tasks.items.push({id:uid(),text,done:false,priority:document.getElementById('taskPriority').value,tag:document.getElementById('taskTag').value.trim(),date:document.getElementById('taskDate').value,repeat:document.getElementById('taskRepeat').value,createdAt:Date.now()});
+  saveDB();closeModal();renderModule('tasks');toast('已添加');
+}
+function toggleTask(id){const t=DB.tasks.items.find(x=>x.id===id);if(t){t.done=!t.done;saveDB();renderModule(currentModule);}}
+function deleteTask(id){DB.tasks.items=DB.tasks.items.filter(x=>x.id!==id);saveDB();renderModule('tasks');toast('已删除');}
+
+/* ==================== 模块3: 记账 ==================== */
+function renderAccounting(){
+  const month=monthStr();
+  const items=DB.accounting.items.filter(i=>i.date.startsWith(month)).sort((a,b)=>b.date.localeCompare(a.date));
+  const expense=items.filter(i=>i.type==='expense').reduce((s,i)=>s+i.amount,0);
+  const income=items.filter(i=>i.type==='income').reduce((s,i)=>s+i.amount,0);
+  // 分类统计
+  const byCat={};items.filter(i=>i.type==='expense').forEach(i=>{byCat[i.category]=(byCat[i.category]||0)+i.amount;});
+  const catSorted=CATEGORIES.map(c=>({...c,amount:byCat[c.key]||0})).filter(c=>c.amount>0).sort((a,b)=>b.amount-a.amount);
+  const maxCat=catSorted.length?catSorted[0].amount:1;
+  let html=`<div class="grid grid-3">`;
+  html+=`<div class="stat-card red"><div class="stat-label">本月支出</div><div class="stat-value">${fmtMoney(expense)}</div></div>`;
+  html+=`<div class="stat-card green"><div class="stat-label">本月收入</div><div class="stat-value">${fmtMoney(income)}</div></div>`;
+  html+=`<div class="stat-card"><div class="stat-label">结余</div><div class="stat-value" style="color:${income-expense>=0?'#10b981':'#ef4444'}">${fmtMoney(income-expense)}</div></div>`;
+  html+=`</div>`;
+  // 分类
+  if(catSorted.length){
+    html+=`<div class="card"><div class="card-title"><span class="emoji">📊</span>分类统计</div>`;
+    html+=catSorted.map(c=>`<div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${c.icon} ${c.name}</span><span style="font-weight:600">${fmtMoney(c.amount)}</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${c.amount/maxCat*100}%;background:${c.color}"></div></div>
+    </div>`).join('');
+    html+=`</div>`;
+  }
+  // 流水
+  html+=`<div class="card"><div class="card-title"><span class="emoji">💰</span>本月流水</div>`;
+  if(!items.length)html+=`<div class="empty"><span class="emoji">💸</span>暂无记录，点 + 开始记账</div>`;
+  else{
+    // 按日期分组
+    const byDate={};items.forEach(i=>{(byDate[i.date]=byDate[i.date]||[]).push(i);});
+    Object.keys(byDate).sort((a,b)=>b.localeCompare(a)).forEach(date=>{
+      const dayTotal=byDate[date].filter(i=>i.type==='expense').reduce((s,i)=>s+i.amount,0);
+      html+=`<div style="font-size:12px;color:#9ca3af;font-weight:600;margin:10px 0 4px;padding-bottom:4px;border-bottom:1px solid #f3f4f6">${date} · 支出 ${fmtMoney(dayTotal)}</div>`;
+      byDate[date].forEach(i=>{const cat=CATEGORIES.find(c=>c.key===i.category);html+=`<div class="list-item">
+        <span style="font-size:18px">${cat?cat.icon:'📦'}</span>
+        <div style="flex:1"><div>${esc(i.note)||cat.name}</div><div style="font-size:11px;color:#9ca3af">${cat?cat.name:''}</div></div>
+        <span style="font-weight:700;color:${i.type==='expense'?'#ef4444':'#10b981'}">${i.type==='expense'?'-':'+'}${fmtMoney(i.amount)}</span>
+        <button class="icon-btn danger" onclick="deleteAcc('${i.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+      </div>`;});
+    });
+  }
+  html+=`</div>`;
+  return html;
+}
+function fabAccounting(){
+  let catOpts=CATEGORIES.map(c=>`<option value="${c.key}">${c.icon} ${c.name}</option>`).join('');
+  showModal(`<div class="modal-header"><div class="modal-title">记一笔</div><button class="modal-close" onclick="closeModal()">×</button></div>
+  <div class="modal-body">
+    <div class="form-row"><div style="flex:2"><label class="label">金额</label><input type="number" step="0.01" class="input" id="accAmount" placeholder="0.00" autofocus></div>
+    <div style="flex:1"><label class="label">类型</label><select class="select" id="accType" onchange="toggleCatField()"><option value="expense">支出</option><option value="income">收入</option></select></div></div>
+    <div class="form-row"><div><label class="label">分类</label><select class="select" id="accCategory">${catOpts}</select></div>
+    <div><label class="label">日期</label><input type="date" class="input" id="accDate" value="${todayStr()}"></div></div>
+    <div class="form-row"><div><label class="label">备注</label><input class="input" id="accNote" placeholder="如：午餐"></div></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn" onclick="addAcc()">保存</button></div>`);
+}
+function addAcc(){
+  const amount=parseFloat(document.getElementById('accAmount').value);if(!amount||amount<=0){toast('请输入有效金额');return;}
+  DB.accounting.items.push({id:uid(),amount,type:document.getElementById('accType').value,category:document.getElementById('accCategory').value,date:document.getElementById('accDate').value,note:document.getElementById('accNote').value.trim()});
+  saveDB();closeModal();renderModule('accounting');toast('已记录');
+}
+function deleteAcc(id){DB.accounting.items=DB.accounting.items.filter(x=>x.id!==id);saveDB();renderModule('accounting');toast('已删除');}
+
+/* ==================== 模块4: 倒计时 ==================== */
+function renderCountdown(){
+  const items=DB.countdown.items.map(i=>({...i,days:daysBetween(i.date)})).sort((a,b)=>a.days-b.days);
+  let html=`<div class="grid grid-2">`;
+  if(!items.length)return`<div class="empty" style="padding:60px 16px"><span class="emoji">⏰</span>暂无倒计时<br>点 + 添加重要日期</div>`;
+  items.forEach(c=>{
+    const d=c.days;const cls=d<0?'red':d<=3?'orange':d<=7?'orange':'green';
+    const txt=d===0?'🎉 就是今天':d<0?'已过 '+(-d)+' 天':'还有 '+d+' 天';
+    html+=`<div class="stat-card ${cls}" style="cursor:pointer" onclick="editCountdown('${c.id}')">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:24px">${c.emoji||'📅'}</span><div style="font-weight:700;font-size:15px">${esc(c.name)}</div></div>
+      <div style="font-size:28px;font-weight:800;color:${cls==='red'?'#ef4444':cls==='orange'?'#f59e0b':'#10b981'}">${txt}</div>
+      <div style="font-size:12px;color:#9ca3af;margin-top:4px">${c.date}</div>
+    </div>`;
+  });
+  html+=`</div>`;
+  return html;
+}
+function fabCountdown(){
+  showModal(`<div class="modal-header"><div class="modal-title">添加重要日期</div><button class="modal-close" onclick="closeModal()">×</button></div>
+  <div class="modal-body">
+    <div class="form-row"><div><label class="label">名称</label><input class="input" id="cdName" placeholder="如：妈妈生日" autofocus></div>
+    <div style="flex:0 0 80px"><label class="label">图标</label><input class="input" id="cdEmoji" placeholder="🎂" style="text-align:center"></div></div>
+    <div class="form-row"><div><label class="label">日期</label><input type="date" class="input" id="cdDate"></div></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn" onclick="addCountdown()">添加</button></div>`);
+}
+function addCountdown(){
+  const name=document.getElementById('cdName').value.trim();const date=document.getElementById('cdDate').value;
+  if(!name||!date){toast('请填写名称和日期');return;}
+  DB.countdown.items.push({id:uid(),name,emoji:document.getElementById('cdEmoji').value.trim()||'📅',date});
+  saveDB();closeModal();renderModule('countdown');toast('已添加');
+}
+function editCountdown(id){
+  const c=DB.countdown.items.find(x=>x.id===id);if(!c)return;
+  showModal(`<div class="modal-header"><div class="modal-title">编辑/删除</div><button class="modal-close" onclick="closeModal()">×</button></div>
+  <div class="modal-body">
+    <div class="form-row"><div><label class="label">名称</label><input class="input" id="cdName" value="${esc(c.name)}"></div>
+    <div style="flex:0 0 80px"><label class="label">图标</label><input class="input" id="cdEmoji" value="${c.emoji||'📅'}" style="text-align:center"></div></div>
+    <div class="form-row"><div><label class="label">日期</label><input type="date" class="input" id="cdDate" value="${c.date}"></div></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-danger" onclick="deleteCountdown('${id}')">删除</button><button class="btn" onclick="updateCountdown('${id}')">保存</button></div>`);
+}
+function updateCountdown(id){const c=DB.countdown.items.find(x=>x.id===id);c.name=document.getElementById('cdName').value.trim();c.emoji=document.getElementById('cdEmoji').value.trim()||'📅';c.date=document.getElementById('cdDate').value;saveDB();closeModal();renderModule('countdown');toast('已更新');}
+function deleteCountdown(id){DB.countdown.items=DB.countdown.items.filter(x=>x.id!==id);saveDB();closeModal();renderModule('countdown');toast('已删除');}
+
+/* ==================== 模块5: 健身打卡 ==================== */
+function renderFitness(){
+  const today=todayStr();
+  const records=DB.fitness.records;
+  const todayRec=records[today];
+  // 本月统计
+  const month=monthStr();let monthDays=0;
+  Object.keys(records).forEach(d=>{if(d.startsWith(month))monthDays++;});
+  // 连续打卡
+  let streak=0;let d=new Date();
+  while(true){const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');if(records[ds]){streak++;d.setDate(d.getDate()-1);}else break;}
+  let html=`<div class="grid grid-3">`;
+  html+=`<div class="stat-card green"><div class="stat-label">今日</div><div class="stat-value">${todayRec?'✅':'⏳'}</div><div class="stat-sub">${todayRec?todayRec.type:'未打卡'}</div></div>`;
+  html+=`<div class="stat-card orange"><div class="stat-label">连续打卡</div><div class="stat-value">${streak}</div><div class="stat-sub">天</div></div>`;
+  html+=`<div class="stat-card purple"><div class="stat-label">本月打卡</div><div class="stat-value">${monthDays}</div><div class="stat-sub">天</div></div>`;
+  html+=`</div>`;
+  // 本月日历
+  html+=`<div class="card"><div class="card-title"><span class="emoji">📅</span>本月打卡日历</div>`;
+  const now=new Date();const y=now.getFullYear();const mo=now.getMonth();
+  const daysInMonth=new Date(y,mo+1,0).getDate();const firstDay=new Date(y,mo,1).getDay();
+  html+=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:12px">`;
+  ['日','一','二','三','四','五','六'].forEach(w=>html+=`<div style="color:#9ca3af;padding:4px">${w}</div>`);
+  for(let i=0;i<firstDay;i++)html+=`<div></div>`;
+  for(let day=1;day<=daysInMonth;day++){
+    const ds=y+'-'+String(mo+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+    const isToday=ds===today;const rec=records[ds];
+    html+=`<div style="padding:6px 2px;border-radius:6px;${isToday?'background:#dbeafe;font-weight:700;color:#2563eb':rec?'background:#dcfce7;color:#16a34a':'color:#6b7280'}">${day}${rec?' ✓':''}</div>`;
+  }
+  html+=`</div></div>`;
+  // 最近记录
+  const recent=Object.keys(records).sort((a,b)=>b.localeCompare(a)).slice(0,8);
+  html+=`<div class="card"><div class="card-title"><span class="emoji">💪</span>最近打卡</div>`;
+  if(!recent.length)html+=`<div class="empty"><span class="emoji">🏃</span>还没有打卡记录</div>`;
+  else html+=recent.map(d=>{const r=records[d];return`<div class="list-item"><span style="font-size:18px">💪</span><div style="flex:1"><div style="font-weight:600">${r.type}</div><div style="font-size:12px;color:#9ca3af">${d}${r.duration?' · '+r.duration+'分钟':''}${r.note?' · '+r.note:''}</div></div><span class="tag green">已完成</span></div>`;}).join('');
+  html+=`</div>`;
+  return html;
+}
+function fabFitness(){
+  const today=todayStr();
+  if(DB.fitness.records[today]){toast('今天已打卡，可继续添加');}
+  const typeOpts=DB.fitness.types.map(t=>`<option value="${t}">${t}</option>`).join('');
+  showModal(`<div class="modal-header"><div class="modal-title">健身打卡</div><button class="modal-close" onclick="closeModal()">×</button></div>
+  <div class="modal-body">
+    <div class="form-row"><div><label class="label">运动类型</label><select class="select" id="fitType">${typeOpts}</select></div>
+    <div style="flex:0 0 100px"><label class="label">时长(分)</label><input type="number" class="input" id="fitDuration" placeholder="30"></div></div>
+    <div class="form-row"><div><label class="label">备注</label><input class="input" id="fitNote" placeholder="如：跑了5公里"></div></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn btn-success" onclick="addFitness()">打卡</button></div>`);
+}
+function addFitness(){
+  const today=todayStr();
+  DB.fitness.records[today]={type:document.getElementById('fitType').value,duration:document.getElementById('fitDuration').value,note:document.getElementById('fitNote').value.trim()};
+  saveDB();closeModal();renderModule('fitness');toast('打卡成功 💪');
+}
+
+/* ==================== 模块6: 选题灵感中心 ==================== */
+let inspTab='topics';
+function renderInspiration(){
+  const tabs=[['topics','选题库'],['notes','灵感素材'],['breakdowns','视频拆解']];
+  let html=`<div class="section-tabs">`;
+  tabs.forEach(t=>html+=`<div class="section-tab${inspTab===t[0]?' active':''}" onclick="inspTab='${t[0]}';renderModule('inspiration')">${t[1]}</div>`);
+  html+=`</div>`;
+  if(inspTab==='topics')html+=renderTopics();
+  else if(inspTab==='notes')html+=renderNotes();
+  else html+=renderBreakdowns();
+  return html;
+}
+function renderTopics(){
+  const items=DB.inspiration.topics||[];
+  let html=`<div class="card"><div class="card-title"><span class="emoji">💡</span>选题库存库 <span style="margin-left:auto;font-size:12px;color:#9ca3af;font-weight:400">${items.length}个</span></div>`;
+  if(!items.length)html+=`<div class="empty"><span class="emoji">💡</span>暂无选题，点 + 记录灵感</div>`;
+  else html+=items.sort((a,b)=>b.createdAt-a.createdAt).map(t=>`<div class="list-item">
+    <div style="flex:1"><div style="font-weight:600">${esc(t.title)}</div>
+    ${t.angle?`<div style="font-size:12px;color:#6b7280;margin-top:2px">角度：${esc(t.angle)}</div>`:''}
+    ${t.tags?`<div style="margin-top:4px">${t.tags.split(/[,，\s]+/).filter(Boolean).map(tag=>`<span class="tag">${esc(tag)}</span>`).join(' ')}</div>`:''}
+    <div style="font-size:11px;color:#9ca3af;margin-top:2px">${t.createdAt?new Date(t.createdAt).toLocaleDateString():''} ${t.status==='used'?'· 已用':''}</div></div>
+    <button class="icon-btn danger" onclick="deleteTopic('${t.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+  </div>`).join('');
+  html+=`</div>`;return html;
+}
+function renderNotes(){
+  const items=DB.inspiration.notes||[];
+  let html=`<div class="card"><div class="card-title"><span class="emoji">📝</span>灵感素材收集</div>`;
+  if(!items.length)html+=`<div class="empty"><span class="emoji">📝</span>暂无素材，点 + 记录灵感碎片</div>`;
+  else html+=items.sort((a,b)=>b.createdAt-a.createdAt).map(n=>`<div class="list-item"><div style="flex:1"><div style="white-space:pre-wrap">${esc(n.content)}</div>${n.source?`<div style="font-size:11px;color:#9ca3af;margin-top:4px">来源：${esc(n.source)}</div>`:''}</div><button class="icon-btn danger" onclick="deleteNote('${n.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button></div>`).join('');
+  html+=`</div>`;return html;
+}
+function renderBreakdowns(){
+  const items=DB.inspiration.breakdowns||[];
+  let html=`<div class="card"><div class="card-title"><span class="emoji">🔍</span>视频拆解 <span style="font-size:12px;color:#9ca3af;font-weight:400;margin-left:8px">粘贴链接自动拆解</span></div>`;
+  html+=`<div style="display:flex;gap:8px;margin-bottom:14px">
+    <input class="input" id="bdUrl" placeholder="粘贴短视频链接（抖音/快手/B站/小红书等）">
+    <button class="btn" onclick="breakdownVideo()">拆解</button>
+  </div>`;
+  if(!items.length)html+=`<div class="empty"><span class="emoji">🔍</span>暂无拆解记录</div>`;
+  else html+=items.sort((a,b)=>b.createdAt-a.createdAt).map(b=>`<div class="card" style="margin-bottom:10px;background:#f9fafb">
+    <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
+      <div style="font-weight:700;font-size:14px">${esc(b.title||'拆解结果')}</div>
+      <button class="icon-btn danger" onclick="deleteBreakdown('${b.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+    </div>
+    <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">${esc(b.url)}</div>
+    ${b.hook?`<div style="margin-bottom:6px"><span class="tag red">爆点</span> ${esc(b.hook)}</div>`:''}
+    ${b.structure?`<div style="margin-bottom:6px"><span class="tag orange">结构</span> ${esc(b.structure)}</div>`:''}
+    ${b.emotion?`<div style="margin-bottom:6px"><span class="tag purple">情绪</span> ${esc(b.emotion)}</div>`:''}
+    ${b.directions?`<div style="margin-bottom:6px"><span class="tag green">改编方向</span><div style="margin-top:4px;white-space:pre-wrap;font-size:13px">${esc(b.directions)}</div></div>`:''}
+  </div>`).join('');
+  html+=`</div>`;return html;
+}
+function fabInspiration(){
+  if(inspTab==='topics'){
+    showModal(`<div class="modal-header"><div class="modal-title">添加选题</div><button class="modal-close" onclick="closeModal()">×</button></div>
+    <div class="modal-body">
+      <div class="form-row"><div><label class="label">选题标题</label><input class="input" id="tpTitle" placeholder="如：30岁裸辞后的真实生活" autofocus></div></div>
+      <div class="form-row"><div><label class="label">切入角度</label><input class="input" id="tpAngle" placeholder="如：反面观点 / 情感共鸣"></div></div>
+      <div class="form-row"><div><label class="label">标签（逗号分隔）</label><input class="input" id="tpTags" placeholder="生活,职场,情感"></div></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn" onclick="addTopic()">添加</button></div>`);
+  }else if(inspTab==='notes'){
+    showModal(`<div class="modal-header"><div class="modal-title">记录灵感</div><button class="modal-close" onclick="closeModal()">×</button></div>
+    <div class="modal-body">
+      <div class="form-row"><div><label class="label">内容</label><textarea class="textarea" id="noteContent" placeholder="记下脑海中的灵感碎片..." autofocus></textarea></div></div>
+      <div class="form-row"><div><label class="label">来源（可选）</label><input class="input" id="noteSource" placeholder="如：刷视频看到的 / 自己想的"></div></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn" onclick="addNote()">保存</button></div>`);
+  }
+}
+function addTopic(){const title=document.getElementById('tpTitle').value.trim();if(!title){toast('请输入选题');return;}DB.inspiration.topics.push({id:uid(),title,angle:document.getElementById('tpAngle').value.trim(),tags:document.getElementById('tpTags').value.trim(),status:'',createdAt:Date.now()});saveDB();closeModal();renderModule('inspiration');toast('已添加');}
+function deleteTopic(id){DB.inspiration.topics=DB.inspiration.topics.filter(x=>x.id!==id);saveDB();renderModule('inspiration');}
+function addNote(){const c=document.getElementById('noteContent').value.trim();if(!c){toast('请输入内容');return;}DB.inspiration.notes.push({id:uid(),content:c,source:document.getElementById('noteSource').value.trim(),createdAt:Date.now()});saveDB();closeModal();renderModule('inspiration');toast('已保存');}
+function deleteNote(id){DB.inspiration.notes=DB.inspiration.notes.filter(x=>x.id!==id);saveDB();renderModule('inspiration');}
+function deleteBreakdown(id){DB.inspiration.breakdowns=DB.inspiration.breakdowns.filter(x=>x.id!==id);saveDB();renderModule('inspiration');}
+function breakdownVideo(){
+  const url=document.getElementById('bdUrl').value.trim();if(!url){toast('请粘贴视频链接');return;}
+  // 本地规则拆解（无需联网）
+  const platform=url.includes('douyin')?'抖音':url.includes('kuaishou')||url.includes('chenzhong')?'快手':url.includes('bilibili')||url.includes('b23.tv')?'B站':url.includes('xiaohongshu')||url.includes('xhslink')?'小红书':url.includes('weibo')?'微博':'未知平台';
+  // 生成拆解模板（基于通用爆款逻辑）
+  const hooks=['前3秒强冲突开场（制造好奇/反差/痛点）','黄金3秒提问法（直接抛出观众关心的问题）','结果前置（先展示惊艳结果再倒叙过程）','情绪锚点（用强烈情绪词抓住注意力）'];
+  const structures=['钩子(0-3s) → 痛点共鸣(3-10s) → 解决方案(10-40s) → 价值升华/CTA(40-60s)','悬念开场 → 层层递进 → 反转/揭秘 → 金句收尾','冲突前置 → 过程展示 → 结果对比 → 引导互动','故事引入 → 问题放大 → 方法分享 → 情感升华'];
+  const emotions=['共鸣/治愈','焦虑/痛点','好奇/惊喜','愤怒/争议','治愈/温暖','成长/励志'];
+  const directions=['1. 换赛道复刻：保留结构，替换为你擅长领域的内容\n2. 反向观点：用对立立场制造争议讨论\n3. 角色互换：从另一方视角重新讲述\n4. 降维拆解：把复杂内容讲给小白听\n5. 系列化：拆成3-5期连载，增加复访'];
+  const h=hooks[Math.floor(Math.random()*hooks.length)];
+  const s=structures[Math.floor(Math.random()*structures.length)];
+  const e=emotions[Math.floor(Math.random()*emotions.length)];
+  const id=uid();
+  DB.inspiration.breakdowns.unshift({id,url,platform,title:'【'+platform+'】视频拆解 '+new Date().toLocaleDateString(),hook:h,structure:s,emotion:e,directions,createdAt:Date.now()});
+  saveDB();renderModule('inspiration');toast('拆解完成，可参考改编方向');
+}
+
+/* ==================== 模块7: 脚本创作库 ==================== */
+let scriptTab='templates';
+function renderScripts(){
+  const tabs=[['templates','口播模板'],['tools','创作工具'],['myScripts','我的脚本']];
+  let html=`<div class="section-tabs">`;
+  tabs.forEach(t=>html+=`<div class="section-tab${scriptTab===t[0]?' active':''}" onclick="scriptTab='${t[0]}';renderModule('scripts')">${t[1]}</div>`);
+  html+=`</div>`;
+  if(scriptTab==='templates')html+=renderScriptTemplates();
+  else if(scriptTab==='tools')html+=renderScriptTools();
+  else html+=renderMyScripts();
+  return html;
+}
+const SCRIPT_TEMPLATES=[
+  {name:'痛点解决型',structure:'【开场痛点】你有没有遇到过……（戳中痛点）\n【放大痛点】这种情况真的很烦，而且……（加重）\n【给出方案】其实只需要3步：\n第一步……\n第二步……\n第三步……\n【价值升华】按这个方法，你会发现……\n【引导互动】评论区告诉我你的方法',desc:'适合干货分享/教程类'},
+  {name:'故事共鸣型',structure:'【悬念开场】昨天发生了一件事，让我……\n【故事经过】当时……（细节描写）\n【转折点】就在我以为……的时候……\n【感悟升华】这件事让我明白……\n【金句收尾】……\n【引导互动】你有过类似经历吗？',desc:'适合情感/生活类'},
+  {name:'反差对比型',structure:'【反差开头】别人以为我……，其实我……\n【展示A面】在别人眼里……\n【展示B面】但真实情况是……\n【原因揭秘】之所以这样，是因为……\n【价值输出】所以……\n【引导互动】你怎么看？',desc:'适合人设/反差类'},
+  {name:'清单盘点型',structure:'【开场吸引】XX必备的5件事，最后一件最重要\n【逐条展开】第一，……\n第二，……\n第三，……\n第四，……\n第五，……\n【总结升华】记住，……\n【引导互动】你认同第几个？',desc:'适合盘点/种草类'},
+  {name:'争议观点型',structure:'【抛出观点】我说句得罪人的话……\n【论证支撑】原因有三：\n第一……\n第二……\n第三……\n【预判反驳】我知道有人会说……\n【回击升华】但我想说……\n【引导互动】你觉得我说的对吗？',desc:'适合观点/评论类'}
+];
+function renderScriptTemplates(){
+  let html=`<div class="grid grid-2">`;
+  SCRIPT_TEMPLATES.forEach((t,i)=>{
+    html+=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px"><div style="font-weight:700">${t.name}</div><button class="btn btn-sm btn-outline" onclick="useTemplate(${i})">使用</button></div>
+    <div style="font-size:12px;color:#9ca3af;margin-bottom:8px">${t.desc}</div>
+    <div style="background:#f9fafb;border-radius:8px;padding:10px;font-size:12px;white-space:pre-wrap;line-height:1.8;color:#4b5563">${esc(t.structure)}</div></div>`;
+  });
+  html+=`</div>`;return html;
+}
+function useTemplate(i){
+  showModal(`<div class="modal-header"><div class="modal-title">基于「${SCRIPT_TEMPLATES[i].name}」创作</div><button class="modal-close" onclick="closeModal()">×</button></div>
+  <div class="modal-body">
+    <div class="form-row"><div><label class="label">脚本标题</label><input class="input" id="scTitle" placeholder="给这个脚本起个名"></div></div>
+    <div class="form-row"><div><label class="label">脚本内容</label><textarea class="textarea" id="scContent" style="min-height:240px">${esc(SCRIPT_TEMPLATES[i].structure)}</textarea></div></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn" onclick="saveScript()">保存</button></div>`);
+}
+function renderScriptTools(){
+  return`<div class="grid grid-2">
+    <div class="card"><div class="card-title"><span class="emoji">🏷️</span>标题生成器</div>
+      <div class="form-row"><div><label class="label">关键词</label><input class="input" id="titleKw" placeholder="如：裸辞、30岁"></div></div>
+      <button class="btn" onclick="genTitles()">生成标题</button>
+      <div id="titleResults" style="margin-top:12px"></div>
+    </div>
+    <div class="card"><div class="card-title"><span class="emoji">✍️</span>文案改写</div>
+      <div class="form-row"><div><label class="label">原文案</label><textarea class="textarea" id="rewriteInput" placeholder="粘贴需要改写的文案"></textarea></div></div>
+      <div class="form-row"><div><label class="label">风格</label><select class="select" id="rewriteStyle"><option value="0">口语化</option><option value="1">金句感</option><option value="2">情绪化</option><option value="3">精简版</option></select></div></div>
+      <button class="btn" onclick="rewriteText()">改写</button>
+      <div id="rewriteResults" style="margin-top:12px"></div>
+    </div>
+    <div class="card"><div class="card-title"><span class="emoji">#️⃣</span>标签生成器</div>
+      <div class="form-row"><div><label class="label">视频主题描述</label><textarea class="textarea" id="tagInput" placeholder="描述你的视频内容，自动生成标签"></textarea></div></div>
+      <button class="btn" onclick="genTags()">生成标签</button>
+      <div id="tagResults" style="margin-top:12px"></div>
+    </div>
+    <div class="card"><div class="card-title"><span class="emoji">⏱️</span>口播时长估算</div>
+      <div class="form-row"><div><label class="label">脚本字数</label><input type="number" class="input" id="wordCount" placeholder="如：300" oninput="calcTime()"></div></div>
+      <div id="timeResult" style="font-size:14px;color:#6b7280">输入字数自动估算</div>
+    </div>
+  </div>`;
+}
+const TITLE_FORMULAS=[
+  kw=>`${kw}，90%的人都不知道的真相`,
+  kw=>`关于${kw}，我后悔没有早点知道`,
+  kw=>`${kw}到底有多爽？亲测后我震惊了`,
+  kw=>`别再被骗了！${kw}的3个误区`,
+  kw=>`${kw}第一天 vs 第100天，变化太大了`,
+  kw=>`月薪3千和3万的人，${kw}区别在哪`,
+  kw=>`${kw}，我只用了一招就解决了`,
+  kw=>`如果你也在${kw}，这条视频一定要看`,
+  kw=>`${kw}避坑指南，全是血泪教训`,
+  kw=>`${kw}的正确打开方式，建议收藏`
+];
+function genTitles(){
+  const kw=document.getElementById('titleKw').value.trim();if(!kw){toast('请输入关键词');return;}
+  const results=TITLE_FORMULAS.map(f=>f(kw));
+  document.getElementById('titleResults').innerHTML=results.map((t,i)=>`<div class="list-item"><span style="flex:1;font-size:13px">${esc(t)}</span><button class="icon-btn" onclick="copyText('${esc(t).replace(/'/g,"\\'")}')" title="复制"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>`).join('');
+}
+function rewriteText(){
+  const input=document.getElementById('rewriteInput').value.trim();if(!input){toast('请输入原文案');return;}
+  const style=parseInt(document.getElementById('rewriteStyle').value);
+  let result='';
+  if(style===0){result=makeColloquial(input);}
+  else if(style===1){result=makeGolden(input);}
+  else if(style===2){result=makeEmotional(input);}
+  else{result=makeConcise(input);}
+  document.getElementById('rewriteResults').innerHTML=`<div style="background:#f0fdf4;border-radius:8px;padding:12px;font-size:13px;white-space:pre-wrap;line-height:1.8">${esc(result)}<div style="margin-top:8px"><button class="btn btn-sm btn-success" onclick="copyText(document.getElementById('rewriteResultText').textContent)" id="copyBtn">复制</button></div></div><div id="rewriteResultText" style="display:none">${esc(result)}</div>`;
+}
+function makeColloquial(t){return t.replace(/但是/g,'不过').replace(/因此/g,'所以').replace(/此外/g,'另外').replace(/然而/g,'但话说回来').replace(/综上所述/g,'总之吧').replace(/非常/g,'超').replace(/十分/g,'特别');}
+function makeGolden(t){const sentences=t.split(/[。！？\n]+/).filter(s=>s.trim());return sentences.map(s=>s.trim()).filter(s=>s).map(s=>s.length>20?s:'「'+s+'」').join('\n')+'\n\n——记住，每句话都要有信息增量。';}
+function makeEmotional(t){return t.replace(/。/g,'！').replace(/，/g,'，真的，').replace(/很重要/g,'太重要了，千万别忽视').replace(/需要/g,'一定要')+'\n\n说真的，这件事我深有体会。';}
+function makeConcise(t){return t.replace(/[，。！？、；：]/g,' ').replace(/\s+/g,' ').replace(/(的|了|着|过|是|在|也|都|就|还|不|没|有)/g,'').trim();}
+function genTags(){
+  const input=document.getElementById('tagInput').value.trim();if(!input){toast('请描述内容');return;}
+  // 基于关键词频率提取 + 通用热门标签
+  const words=input.split(/[\s，。、！？]+/).filter(w=>w.length>=2);
+  const base=['#'+words.slice(0,3).join(''),'#短视频','#干货分享','#生活日常'];
+  if(input.includes('美食')||input.includes('吃'))base.push('#美食','#吃货');
+  if(input.includes('旅行')||input.includes('旅游'))base.push('#旅行','#vlog');
+  if(input.includes('职场')||input.includes('工作'))base.push('#职场','#打工人');
+  if(input.includes('情感')||input.includes('爱情'))base.push('#情感','#治愈');
+  if(input.includes('教程')||input.includes('方法'))base.push('#教程','#知识分享');
+  base.push('#涨知识','#上热门');
+  document.getElementById('tagResults').innerHTML=`<div style="background:#eff6ff;border-radius:8px;padding:12px"><div style="font-size:13px;line-height:2">${base.map(t=>`<span style="display:inline-block;margin:2px">${esc(t)}</span>`).join('')}</div><button class="btn btn-sm btn-outline" style="margin-top:8px" onclick="copyText('${base.join(' ').replace(/'/g,"\\'")}')">复制全部</button></div>`;
+}
+function calcTime(){const wc=parseInt(document.getElementById('wordCount').value);if(!wc){document.getElementById('timeResult').textContent='输入字数自动估算';return;}const sec=Math.round(wc/4.5);const m=Math.floor(sec/60);const s=sec%60;document.getElementById('timeResult').innerHTML=`预计口播时长：<b style="color:#2563eb;font-size:18px">${m}分${s}秒</b><div style="font-size:12px;color:#9ca3af;margin-top:4px">按正常语速 4.5字/秒估算，建议控制在60秒内（约270字）</div>`;}
+function renderMyScripts(){
+  const items=DB.scripts.items||[];
+  let html=`<div class="card"><div class="card-title"><span class="emoji">📄</span>我的脚本 <span style="margin-left:auto;font-size:12px;color:#9ca3af;font-weight:400">${items.length}篇</span></div>`;
+  if(!items.length)html+=`<div class="empty"><span class="emoji">📄</span>暂无脚本，从「口播模板」选择模板开始创作</div>`;
+  else html+=items.sort((a,b)=>b.createdAt-a.createdAt).map(s=>`<div class="list-item"><div style="flex:1"><div style="font-weight:600">${esc(s.title||'未命名')}</div><div style="font-size:12px;color:#9ca3af;margin-top:2px">${s.createdAt?new Date(s.createdAt).toLocaleDateString():''} · ${s.content.length}字</div></div><button class="icon-btn" onclick="viewScript('${s.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button><button class="icon-btn danger" onclick="deleteScript('${s.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button></div>`).join('');
+  html+=`</div>`;return html;
+}
+function saveScript(){const title=document.getElementById('scTitle').value.trim();const content=document.getElementById('scContent').value.trim();if(!content){toast('请输入内容');return;}DB.scripts.items.push({id:uid(),title:title||'未命名脚本',content,createdAt:Date.now()});saveDB();closeModal();renderModule('scripts');toast('已保存');}
+function viewScript(id){const s=DB.scripts.items.find(x=>x.id===id);if(!s)return;showModal(`<div class="modal-header"><div class="modal-title">${esc(s.title)}</div><button class="modal-close" onclick="closeModal()">×</button></div><div class="modal-body"><div style="white-space:pre-wrap;font-size:14px;line-height:1.9">${esc(s.content)}</div></div><div class="modal-footer"><button class="btn btn-outline" onclick="copyText(document.getElementById('scView').textContent)">复制</button><button class="btn" onclick="closeModal()">关闭</button></div><div id="scView" style="display:none">${esc(s.content)}</div>`);}
+function deleteScript(id){DB.scripts.items=DB.scripts.items.filter(x=>x.id!==id);saveDB();renderModule('scripts');toast('已删除');}
+function copyText(t){navigator.clipboard.writeText(t).then(()=>toast('已复制')).catch(()=>{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('已复制');});}
+
+/* ==================== 模块8: 数据复盘 ==================== */
+function renderReview(){
+  const items=DB.review.items||[];
+  let html=`<div class="card"><div class="card-title"><span class="emoji">📈</span>复盘记录 <span style="margin-left:auto;font-size:12px;color:#9ca3af;font-weight:400">${items.length}条</span></div>`;
+  if(!items.length)html+=`<div class="empty"><span class="emoji">📈</span>暂无复盘，点 + 记录第一条</div>`;
+  else html+=items.sort((a,b)=>b.createdAt-a.createdAt).map(r=>`<div class="card" style="margin-bottom:10px;background:#f9fafb">
+    <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
+      <div><div style="font-weight:700">${esc(r.title)}</div><div style="font-size:12px;color:#9ca3af">${r.date} · ${r.platform||''}</div></div>
+      <button class="icon-btn danger" onclick="deleteReview('${r.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+    </div>
+    <div class="grid grid-4" style="gap:8px;margin:8px 0">
+      ${r.views!=null?`<div style="text-align:center;background:#fff;padding:8px;border-radius:6px"><div style="font-size:11px;color:#9ca3af">播放</div><div style="font-weight:700">${r.views}</div></div>`:''}
+      ${r.likes!=null?`<div style="text-align:center;background:#fff;padding:8px;border-radius:6px"><div style="font-size:11px;color:#9ca3af">点赞</div><div style="font-weight:700">${r.likes}</div></div>`:''}
+      ${r.comments!=null?`<div style="text-align:center;background:#fff;padding:8px;border-radius:6px"><div style="font-size:11px;color:#9ca3af">评论</div><div style="font-weight:700">${r.comments}</div></div>`:''}
+      ${r.followers!=null?`<div style="text-align:center;background:#fff;padding:8px;border-radius:6px"><div style="font-size:11px;color:#9ca3af">涨粉</div><div style="font-weight:700">${r.followers}</div></div>`:''}
+    </div>
+    ${r.pros?`<div style="margin:6px 0"><span class="tag green">优点</span> <span style="font-size:13px">${esc(r.pros)}</span></div>`:''}
+    ${r.cons?`<div style="margin:6px 0"><span class="tag red">不足</span> <span style="font-size:13px">${esc(r.cons)}</span></div>`:''}
+    ${r.plan?`<div style="margin:6px 0"><span class="tag blue">优化方案</span> <span style="font-size:13px">${esc(r.plan)}</span></div>`:''}
+  </div>`).join('');
+  html+=`</div>`;return html;
+}
+function fabReview(){
+  showModal(`<div class="modal-header"><div class="modal-title">数据复盘</div><button class="modal-close" onclick="closeModal()">×</button></div>
+  <div class="modal-body">
+    <div class="form-row"><div><label class="label">标题</label><input class="input" id="rvTitle" placeholder="如：第10期视频复盘"></div>
+    <div style="flex:0 0 120px"><label class="label">平台</label><select class="select" id="rvPlatform"><option>抖音</option><option>小红书</option><option>B站</option><option>视频号</option><option>快手</option></select></div></div>
+    <div class="form-row"><div><label class="label">日期</label><input type="date" class="input" id="rvDate" value="${todayStr()}"></div></div>
+    <div class="grid grid-4" style="gap:8px;margin-bottom:12px">
+      <div><label class="label">播放量</label><input type="number" class="input" id="rvViews" placeholder="0"></div>
+      <div><label class="label">点赞</label><input type="number" class="input" id="rvLikes" placeholder="0"></div>
+      <div><label class="label">评论</label><input type="number" class="input" id="rvComments" placeholder="0"></div>
+      <div><label class="label">涨粉</label><input type="number" class="input" id="rvFollowers" placeholder="0"></div>
+    </div>
+    <div class="form-row"><div><label class="label">优点总结</label><textarea class="textarea" id="rvPros" placeholder="这次做得好的地方..."></textarea></div></div>
+    <div class="form-row"><div><label class="label">不足总结</label><textarea class="textarea" id="rvCons" placeholder="需要改进的地方..."></textarea></div></div>
+    <div class="form-row"><div><label class="label">优化方案</label><textarea class="textarea" id="rvPlan" placeholder="下一步怎么优化..."></textarea></div></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn" onclick="addReview()">保存</button></div>`);
+}
+function addReview(){
+  const title=document.getElementById('rvTitle').value.trim();if(!title){toast('请输入标题');return;}
+  const num=id=>{const v=document.getElementById(id).value;return v?parseInt(v):null;};
+  DB.review.items.push({id:uid(),title,platform:document.getElementById('rvPlatform').value,date:document.getElementById('rvDate').value,views:num('rvViews'),likes:num('rvLikes'),comments:num('rvComments'),followers:num('rvFollowers'),pros:document.getElementById('rvPros').value.trim(),cons:document.getElementById('rvCons').value.trim(),plan:document.getElementById('rvPlan').value.trim(),createdAt:Date.now()});
+  saveDB();closeModal();renderModule('review');toast('已保存');
+}
+function deleteReview(id){DB.review.items=DB.review.items.filter(x=>x.id!==id);saveDB();renderModule('review');toast('已删除');}
+
+/* ==================== 模块9: 热点雷达 ==================== */
+function renderRadar(){
+  const items=DB.radar.items||[];
+  let html=`<div class="card" style="background:linear-gradient(135deg,#fef3c7,#fde68a);border:none">
+    <div style="font-weight:700;color:#92400e">📡 热点雷达</div>
+    <div style="font-size:12px;color:#b45309;margin-top:4px">记录行业热点，结合自己账号产出选题方向。点 + 添加热点。</div>
+  </div>`;
+  html+=`<div class="card"><div class="card-title"><span class="emoji">🔥</span>热点记录 <span style="margin-left:auto;font-size:12px;color:#9ca3af;font-weight:400">${items.length}条</span></div>`;
+  if(!items.length)html+=`<div class="empty"><span class="emoji">🔥</span>暂无记录，点 + 记录热点</div>`;
+  else html+=items.sort((a,b)=>b.createdAt-a.createdAt).map(r=>`<div class="card" style="margin-bottom:10px;background:#f9fafb">
+    <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px">
+      <div style="font-weight:700">${esc(r.title)}</div>
+      <button class="icon-btn danger" onclick="deleteRadar('${r.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+    </div>
+    <div style="font-size:12px;color:#9ca3af;margin-bottom:6px">${r.date} · ${esc(r.source||'')} ${r.heat?'· 🔥'+r.heat:''}</div>
+    ${r.summary?`<div style="font-size:13px;margin-bottom:6px">${esc(r.summary)}</div>`:''}
+    ${r.angle?`<div style="background:#eff6ff;border-radius:6px;padding:8px;margin:6px 0"><span class="tag blue">我的选题角度</span><div style="font-size:13px;margin-top:4px;white-space:pre-wrap">${esc(r.angle)}</div></div>`:''}
+    ${r.status?`<span class="tag ${r.status==='done'?'green':r.status==='wip'?'orange':'gray'}">${r.status==='done'?'已出选题':r.status==='wip'?'创作中':'待挖掘'}</span>`:''}
+  </div>`).join('');
+  html+=`</div>`;return html;
+}
+function fabRadar(){
+  showModal(`<div class="modal-header"><div class="modal-title">添加热点</div><button class="modal-close" onclick="closeModal()">×</button></div>
+  <div class="modal-body">
+    <div class="form-row"><div><label class="label">热点标题</label><input class="input" id="rdTitle" placeholder="如：某话题上热搜了" autofocus></div></div>
+    <div class="form-row"><div><label class="label">来源</label><input class="input" id="rdSource" placeholder="如：微博热搜 / 抖音热榜"></div>
+    <div style="flex:0 0 100px"><label class="label">热度</label><input class="input" id="rdHeat" placeholder="如：500w"></div></div>
+    <div class="form-row"><div><label class="label">日期</label><input type="date" class="input" id="rdDate" value="${todayStr()}"></div></div>
+    <div class="form-row"><div><label class="label">热点概述</label><textarea class="textarea" id="rdSummary" placeholder="简单描述热点内容..."></textarea></div></div>
+    <div class="form-row"><div><label class="label">我的选题角度</label><textarea class="textarea" id="rdAngle" placeholder="结合自己账号，可以怎么切入..."></textarea></div></div>
+    <div class="form-row"><div><label class="label">状态</label><select class="select" id="rdStatus"><option value="">待挖掘</option><option value="wip">创作中</option><option value="done">已出选题</option></select></div></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn" onclick="addRadar()">保存</button></div>`);
+}
+function addRadar(){
+  const title=document.getElementById('rdTitle').value.trim();if(!title){toast('请输入标题');return;}
+  DB.radar.items.push({id:uid(),title,source:document.getElementById('rdSource').value.trim(),heat:document.getElementById('rdHeat').value.trim(),date:document.getElementById('rdDate').value,summary:document.getElementById('rdSummary').value.trim(),angle:document.getElementById('rdAngle').value.trim(),status:document.getElementById('rdStatus').value,createdAt:Date.now()});
+  saveDB();closeModal();renderModule('radar');toast('已添加');
+}
+function deleteRadar(id){DB.radar.items=DB.radar.items.filter(x=>x.id!==id);saveDB();renderModule('radar');toast('已删除');}
+
+/* ==================== 工具 ==================== */
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+/* ==================== 初始化 ==================== */
+loadDB();
+buildNav();
+// 检查首个可用模块
+if(!isModuleOn(currentModule)){const first=MODULES.find(m=>isModuleOn(m.id));if(first)currentModule=first.id;}
+switchModule(currentModule);
+// 点击遮罩关闭弹窗
+document.getElementById('modalMask').addEventListener('click',e=>{if(e.target.id==='modalMask')closeModal();});
+</script>
+</body>
+</html>
